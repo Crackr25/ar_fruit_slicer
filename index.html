@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AR Fruit Ninja</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="loading" class="loading">Loading AI Models...</div>
+    <video id="webcam" autoplay playsinline></video>
+    <canvas id="game-canvas"></canvas>
+    <div id="ui-layer">
+      <div id="score">Score: 0</div>
+      <div id="lives" style="position: absolute; top: 60px; left: 20px; color: #ff6b6b; font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px #000; font-family: 'Arial', sans-serif;">Lives: 20</div>
+      <div id="game-over" class="hidden">
+        <h1>Game Over</h1>
+        <p>Final Score: <span id="final-score">0</span></p>
+        <button id="restart-btn">Play Again</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
