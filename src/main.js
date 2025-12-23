@@ -1,6 +1,7 @@
 import { FruitGame } from './game/FruitGame.js';
 import { ShooterGame } from './game/ShooterGame.js';
 import { DrawingGame } from './game/DrawingGame.js';
+import { TelekinesisGame } from './game/TelekinesisGame.js';
 import { HandTracker } from './game/HandTracker.js';
 
 class App {
@@ -15,6 +16,7 @@ class App {
       btnFruit: document.getElementById('btn-fruit'),
       btnShooter: document.getElementById('btn-shooter'),
       btnDrawing: document.getElementById('btn-drawing'),
+      btnTelekinesis: document.getElementById('btn-telekinesis'),
       gameOver: document.getElementById('game-over'),
       restartBtn: document.getElementById('restart-btn'),
     };
@@ -22,6 +24,7 @@ class App {
     this.ui.btnFruit.addEventListener('click', () => this.startGame('fruit'));
     this.ui.btnShooter.addEventListener('click', () => this.startGame('shooter'));
     this.ui.btnDrawing.addEventListener('click', () => this.startGame('drawing'));
+    this.ui.btnTelekinesis.addEventListener('click', () => this.startGame('telekinesis'));
     this.ui.restartBtn.addEventListener('click', () => this.restartGame());
   }
 
@@ -84,6 +87,8 @@ class App {
       this.currentGame = new ShooterGame(this.video, this.handTracker);
     } else if (type === 'drawing') {
       this.currentGame = new DrawingGame(this.video, this.handTracker);
+    } else if (type === 'telekinesis') {
+      this.currentGame = new TelekinesisGame(this.video, this.handTracker);
     }
 
     this.currentGame.start();
