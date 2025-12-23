@@ -1,5 +1,6 @@
 import { FruitGame } from './game/FruitGame.js';
 import { ShooterGame } from './game/ShooterGame.js';
+import { DrawingGame } from './game/DrawingGame.js';
 import { HandTracker } from './game/HandTracker.js';
 
 class App {
@@ -13,17 +14,15 @@ class App {
       loading: document.getElementById('loading'),
       btnFruit: document.getElementById('btn-fruit'),
       btnShooter: document.getElementById('btn-shooter'),
+      btnDrawing: document.getElementById('btn-drawing'),
       gameOver: document.getElementById('game-over'),
       restartBtn: document.getElementById('restart-btn'),
     };
 
     this.ui.btnFruit.addEventListener('click', () => this.startGame('fruit'));
     this.ui.btnShooter.addEventListener('click', () => this.startGame('shooter'));
-    this.ui.restartBtn.addEventListener('click', () => this.restartGame()); // Global restart handler?
-    // Note: Individual games handle their own logic loop, but they share the UI "Game Over" restart.
-    // Actually, FruitGame had its own internal logic for restart. 
-    // Let's modify FruitGame to allow external control or keep it self-contained.
-    // For now, simple: Dispose old game, create new one.
+    this.ui.btnDrawing.addEventListener('click', () => this.startGame('drawing'));
+    this.ui.restartBtn.addEventListener('click', () => this.restartGame());
   }
 
   async init() {
@@ -59,18 +58,32 @@ class App {
     }
   }
 
+  restartGame() {
+    // Just re-show menu? Or restart current game?
+    // For now, let's just go back to Main Menu to let them choose again.
+    // Simplifies logic.
+    if (this.currentGame) {
+      this.currentGame.stop();
+      this.currentGame = null;
+    }
+    this.ui.gameOver.classList.add('hidden');
+    this.ui.menu.style.display = 'flex';
+  }
+
   startGame(type) {
     if (this.currentGame) {
       this.currentGame.stop();
     }
 
     this.ui.menu.style.display = 'none';
-    this.ui.gameOver.classList.add('hidden'); // Ensure game over is hidden
+    this.ui.gameOver.classList.add('hidden');
 
     if (type === 'fruit') {
       this.currentGame = new FruitGame(this.video, this.handTracker);
     } else if (type === 'shooter') {
       this.currentGame = new ShooterGame(this.video, this.handTracker);
+    } else if (type === 'drawing') {
+      this.currentGame = new DrawingGame(this.video, this.handTracker);
     }
 
     this.currentGame.start();
