@@ -2,11 +2,13 @@ import { HandTracker } from './HandTracker.js';
 import { Blade } from './Blade.js';
 import { Fruit } from './Fruit.js';
 
-export class Game {
-    constructor() {
+export class FruitGame {
+    constructor(video, handTracker) {
         this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d');
-        this.video = document.getElementById('webcam');
+        this.video = video;
+        this.handTracker = handTracker;
+
         this.ui = {
             loading: document.getElementById('loading'),
             score: document.getElementById('score'),
@@ -16,7 +18,6 @@ export class Game {
             lives: document.getElementById('lives'),
         };
 
-        this.handTracker = new HandTracker();
         this.blade = new Blade('#ffffff');
         this.fruits = [];
 
@@ -30,49 +31,23 @@ export class Game {
         this.gameDifficulty = 1;
 
         // Resize canvas to match window
-        window.addEventListener('resize', () => this.resize());
+        // Note: Main.js creates the game, but event listeners might pile up if we aren't careful.
+        // For simplicity, we'll keep resize listener here or move to Main. 
+        // Let's keep it but ensure we don't duplicate. 
+        // Actually, main.js should handle global window resize.
+        // But for now, let's leave it.
+        this.resizeHandler = () => this.resize();
+        window.addEventListener('resize', this.resizeHandler);
         this.resize();
 
-        this.ui.restartBtn.addEventListener('click', () => this.restartGame());
+        this.restartHandler = () => this.restartGame();
+        this.ui.restartBtn.addEventListener('click', this.restartHandler);
     }
 
-    async init() {
-        this.ui.loading.style.display = 'block';
+    start() {
+        this.ui.score.style.display = 'block';
+        this.ui.lives.style.display = 'block';
 
-        try {
-            // Setup Camera
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    facingMode: 'user'
-                }
-            });
-            this.video.srcObject = stream;
-            await new Promise((resolve) => {
-                this.video.onloadedmetadata = () => {
-                    this.video.play();
-                    resolve();
-                };
-            });
-
-            // Setup MediaPipe
-            await this.handTracker.init();
-
-            this.ui.loading.style.display = 'none';
-            this.startGame();
-        } catch (error) {
-            console.error("Initialization failed:", error);
-            this.ui.loading.innerText = `Error: ${error.message}`;
-        }
-    }
-
-    resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-    }
-
-    startGame() {
         this.isRunning = true;
         this.score = 0;
         this.lives = 20;
@@ -85,6 +60,26 @@ export class Game {
         this.ui.gameOver.classList.add('hidden');
         this.lastTime = performance.now();
         requestAnimationFrame((time) => this.loop(time));
+    }
+
+    stop() {
+        this.isRunning = false;
+        this.ui.score.style.display = 'none';
+        this.ui.lives.style.display = 'none';
+        this.ui.gameOver.classList.add('hidden');
+
+        // Clean up listeners if needed, or just let them stay if we destroy instance
+        window.removeEventListener('resize', this.resizeHandler);
+        this.ui.restartBtn.removeEventListener('click', this.restartHandler);
+    }
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+    }
+
+    startGame() {
+        this.start();
     }
 
     restartGame() {

@@ -92,6 +92,11 @@ button {
   margin-top: 20px;
 }
 
+
+#main-menu {
+  pointer-events: auto;
+}
+
 button:hover {
   background-color: #ff6b81;
 }
