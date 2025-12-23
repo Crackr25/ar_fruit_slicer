@@ -88,95 +88,109 @@ export class TelekinesisGame {
             this.box.rv.y *= 0.1;
             this.box.rv.z *= 0.1;
 
-            this.lastHandPos = null; // Reset single hand tracking
-            return; // Skip single hand logic
+            this.lastHandPos = null;
+            return;
         } else {
-            this.ui.lives.innerText = "Use hand to Float & Push!";
+            this.ui.lives.innerText = "Pinch to ZOOM | Use hand to Move";
         }
 
         if (landmarks && landmarks.landmarks && landmarks.landmarks.length > 0) {
             const hand = landmarks.landmarks[0];
-            const indexTip = hand[8]; // Simple tracking point (palm: 0, index: 8)
+            const indexTip = hand[8];
+            const thumbTip = hand[4];
 
             // Map 0-1 to Canvas Coordinates
-            // Video is mirrored
-            // X: (1-normX) * width
             const targetX = (1 - indexTip.x) * this.canvas.width;
             const targetY = indexTip.y * this.canvas.height;
 
-            // Convert to World Center Relative (0,0 center)
+            // World Center Relative
             const worldTargetX = targetX - this.canvas.width / 2;
             const worldTargetY = targetY - this.canvas.height / 2;
 
-            // Update Hand Impulse Logic
+            // PINCH DETECTION (Zoom)
+            const pdx = indexTip.x - thumbTip.x;
+            const pdy = indexTip.y - thumbTip.y;
+            const pDist = Math.sqrt(pdx * pdx + pdy * pdy);
+            const isPinching = pDist < 0.08;
+
+            // Z-Axis Logic (Zoom)
+            // Default target Z = 300 (Far)
+            // Pinch target Z = 50 (Close/Zoomed)
+            const targetZ = isPinching ? 0 : 300;
+
+            // Tracking Physics
             if (this.lastHandPos) {
                 const vx = (worldTargetX - this.lastHandPos.x) / dt;
                 const vy = (worldTargetY - this.lastHandPos.y) / dt;
                 this.handVelocity = { x: vx, y: vy };
 
-                // Distance check
                 const dx = worldTargetX - this.box.x;
                 const dy = worldTargetY - this.box.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
-                // Velocity Influence
-                // "If I move fast, move fast also"
-                // Feed hand velocity directly into acceleration
-
-                if (dist < 300) { // Increased interaction range
+                if (dist < 300) {
                     const speed = Math.sqrt(vx * vx + vy * vy);
 
                     if (speed > 800) {
                         // SUPER PUSH / SLAM
-                        // Apply massive impulse
                         this.box.vx += vx * 0.2;
                         this.box.vy += vy * 0.2;
-                        // Spin crazy
+                        this.box.vz += 200; // Knock back
+
                         this.box.rv.x += vy * 0.0005;
                         this.box.rv.y += -vx * 0.0005;
                     } else {
                         // TELEKINESIS: Guided Float
-                        // F = k * (target - pos) + (handVel * damping)
-                        // Scale responsiveness
-                        const k = 4.0; // Stronger spring
+                        const k = 4.0;
+                        const kz = 2.0;
 
-                        // Pull towards hand
                         this.box.ax = (worldTargetX - this.box.x) * k;
                         this.box.ay = (worldTargetY - this.box.y) * k;
+                        this.box.az = (targetZ - this.box.z) * kz; // Pull to Z
 
-                        // Add Hand Momentum ("Move fast with hand")
+                        // Add Hand Momentum
                         this.box.vx += vx * dt * 2.0;
                         this.box.vy += vy * dt * 2.0;
                     }
                 } else {
-                    // Too far, weak pull
+                    // Weak pull + Return to Z Depth
                     this.box.ax = (worldTargetX - this.box.x) * 0.5;
                     this.box.ay = (worldTargetY - this.box.y) * 0.5;
+                    this.box.az = (300 - this.box.z) * 1.0;
                 }
             } else {
                 this.box.ax = 0;
                 this.box.ay = 0;
+                this.box.az = (300 - this.box.z) * 0.5; // Return to standard depth
             }
 
             this.lastHandPos = { x: worldTargetX, y: worldTargetY };
 
         } else {
             this.lastHandPos = null;
-            // No hand: Float to center
+            // Float to center and depth
             this.box.ax = -this.box.x * 0.2;
             this.box.ay = -this.box.y * 0.2;
+            this.box.az = (300 - this.box.z) * 0.2;
         }
 
         // Physics Integration
         const drag = 0.95;
         this.box.vx += this.box.ax * dt;
         this.box.vy += this.box.ay * dt;
+        this.box.vz += this.box.az * dt;
 
         this.box.vx *= drag;
         this.box.vy *= drag;
+        this.box.vz *= drag;
 
         this.box.x += this.box.vx * dt;
         this.box.y += this.box.vy * dt;
+        this.box.z += this.box.vz * dt;
+
+        const fov = 1000; // Helper for Z clamping
+        // Clamp Z to avoid clipping behind camera or too far
+        if (this.box.z < -fov + 50) { this.box.z = -fov + 50; this.box.vz = 0; } // Near Clip
 
         // 3D Rotation tumbling
         this.box.rotation.x += this.box.rv.x;
@@ -191,6 +205,7 @@ export class TelekinesisGame {
         if (this.box.x > boundX) { this.box.x = boundX; this.box.vx *= -0.8; }
         if (this.box.y < -boundY) { this.box.y = -boundY; this.box.vy *= -0.8; }
         if (this.box.y > boundY) { this.box.y = boundY; this.box.vy *= -0.8; }
+
 
         // Update Particles
         if (!this.particles) this.particles = [];
